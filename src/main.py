@@ -23,11 +23,11 @@ import numpy as np
 import pandas as pd
 from collections.abc import Iterable
 
-# ✅ Optional: specify a subset of messages to filter
+# Optional: specify a subset of messages to filter
 # Leave empty to use all messages from DBC
 CUSTOM_FILTER_CAN_MESSAGES = ["EngineData", "EngineStatus", "EngineDataIEEE", "NM_Gateway_PowerTrain"]
 
-# ✅ Default file paths
+# Default file paths
 DEFAULT_INPUT_MDF = "inputs/Logging_MDF.mf4"
 DEFAULT_DBC_FILE = "inputs/PowerTrain_MDF.dbc"
 DEFAULT_OUTPUT_MDF = "outputs/Filtered_CAN.mf4"
@@ -136,22 +136,22 @@ def filter_and_decode_mdf(input_mdf_path, dbc, filter_map, output_mdf_path):
     if not signals:
         print("❌ No matching signals decoded.")
         print("""
-ℹ️ Diagnostic Summary:
+ℹDiagnostic Summary:
 The selected messages were found in the MDF file, but no named signals were decoded using the DBC.
 This often happens with diagnostic or control messages that carry raw payloads without defined signal mappings.
 
-✅ What the script did:
+What the script did:
 - Filtered frames using your selected message names (or all DBC messages if none were specified).
 - Attempted to decode each frame using cantools.
 - Captured raw bytes as fallback signals (e.g. RawBytes_0x51b).
 
-📦 Result:
+Result:
 You can inspect the raw data in the output MDF file. If the DBC is updated later,
 this script will automatically decode new signals.
 """)
         return
 
-    # ✅ Append all signals into a single Channel Group
+    # Append all signals into a single Channel Group
     new_mdf = MDF()
     signal_list = []
 
@@ -180,7 +180,7 @@ this script will automatically decode new signals.
     except Exception as e:
         print(f"❌ Failed to save MDF: {e}")
 
-    # ✅ Export decoded signals to CSV file
+    # Export decoded signals to CSV file
     try:
         print("📄 Writing CSV file...")
 
