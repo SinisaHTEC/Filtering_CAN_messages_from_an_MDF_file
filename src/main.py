@@ -20,6 +20,7 @@ import os
 from asammdf import MDF, Signal
 import cantools
 import numpy as np
+import pandas as pd
 from collections.abc import Iterable
 
 # ✅ Optional: specify a subset of messages to filter
@@ -30,7 +31,6 @@ CUSTOM_FILTER_CAN_MESSAGES = ["EngineData", "EngineStatus", "EngineDataIEEE", "N
 DEFAULT_INPUT_MDF = "inputs/Logging_MDF.mf4"
 DEFAULT_DBC_FILE = "inputs/PowerTrain_MDF.dbc"
 DEFAULT_OUTPUT_MDF = "outputs/Filtered_CAN.mf4"
-
 
 def load_dbc(dbc_path):
     try:
@@ -101,7 +101,7 @@ def filter_and_decode_mdf(input_mdf_path, dbc, filter_map, output_mdf_path):
 
             try:
                 arb_id = sample[5]         # Extracts the arbitration ID (CAN ID) from the 6th element of the sample tuple
-                if arb_id not in filter_map:    #Skips this frame if its ID isn’t in the list of messages we want to decode.
+                if arb_id not in filter_map:    # Skips this frame if its ID isn’t in the list of messages we want to decode.
                     continue
 
                 dlc = sample[10] if len(sample) > 10 else 8     # Extracts the Data Length Code (DLC) — how many bytes of data are valid
@@ -111,7 +111,7 @@ def filter_and_decode_mdf(input_mdf_path, dbc, filter_map, output_mdf_path):
                 msg = filter_map[arb_id]
 
                 # Use cantools to decode the binary payload data using the DBC message msg.
-                # If successful, returns a dictionary of signal names and values.This ensures we only process valid, non-empty signal data
+                # If successful, returns a dictionary of signal names and values. This ensures we only process valid, non-empty signal data
                 # If decoding fails (e.g. no signal definitions, malformed data), returns None or an empty dictionary
                 decoded = msg.decode(data)
                 if decoded and isinstance(decoded, dict) and decoded:
@@ -180,6 +180,27 @@ this script will automatically decode new signals.
     except Exception as e:
         print(f"❌ Failed to save MDF: {e}")
 
+    # ✅ Export decoded signals to CSV file
+    try:
+        print("📄 Writing CSV file...")
+
+        # Build a DataFrame with all signals, aligned by timestamp
+        df = pd.DataFrame()
+
+        for name in signals:
+            ts = np.array(timestamps[name])
+            vals = np.array(signals[name])
+            df_sig = pd.DataFrame({name: vals}, index=pd.to_datetime(ts, unit='s'))
+            df = pd.concat([df, df_sig], axis=1)
+
+        df.index.name = "Timestamp"
+        csv_path = output_mdf_path.replace(".mf4", ".csv")
+        df.to_csv(csv_path)
+        print(f"✅ CSV file saved to: {csv_path}")
+
+    except Exception as e:
+        print(f"❌ Failed to write CSV: {e}")
+
 def main():
     parser = argparse.ArgumentParser(description="Filter CAN messages from MDF using DBC.")
     parser.add_argument("--input_mdf", default=DEFAULT_INPUT_MDF, help="Path to input MDF file")
@@ -203,3 +224,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
